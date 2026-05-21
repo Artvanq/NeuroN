@@ -1,0 +1,614 @@
+openapi: 3.1.0
+info:
+  title: Neuron API
+  version: 1.1.0
+  description: >
+    Public API surface for Neuron backend. This spec documents all mounted route
+    groups and the primary endpoints for each group.
+servers:
+  - url: http://localhost:4000/api
+tags:
+  - name: health
+  - name: auth
+  - name: oauth
+  - name: categories
+  - name: threads
+  - name: votes
+  - name: projects
+  - name: users
+  - name: conversations
+  - name: notifications
+  - name: message-requests
+  - name: search
+  - name: reports
+  - name: blocks
+  - name: media
+  - name: translate
+  - name: stats
+  - name: git
+  - name: appeals
+  - name: orgs
+  - name: push
+paths:
+  /health:
+    get:
+      tags: [health]
+      summary: API health + service connectivity
+  /auth/config:
+    get:
+      tags: [auth]
+      summary: Auth bootstrap config
+  /auth/register:
+    post:
+      tags: [auth]
+      summary: Register with username/password
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Login with password
+  /auth/refresh:
+    post:
+      tags: [auth]
+      summary: Rotate access/refresh tokens
+  /auth/logout:
+    post:
+      tags: [auth]
+      summary: Revoke current refresh session
+  /auth/me:
+    get:
+      tags: [auth]
+      summary: Current profile
+    patch:
+      tags: [auth]
+      summary: Update profile, mind statement, notificationPreferences (inApp/email per type + email.digest)
+  /auth/sessions:
+    get:
+      tags: [auth]
+      summary: List active refresh sessions
+  /auth/sessions/{jti}:
+    delete:
+      tags: [auth]
+      summary: Revoke specific refresh session
+  /auth/sessions/revoke-all:
+    post:
+      tags: [auth]
+      summary: Revoke all sessions (optionally keep current)
+  /auth/export:
+    get:
+      tags: [auth]
+      summary: Export account data as JSON
+  /auth/account:
+    delete:
+      tags: [auth]
+      summary: Permanently delete account
+  /auth/2fa/status:
+    get:
+      tags: [auth]
+      summary: Two-factor authentication status
+  /auth/2fa/setup:
+    post:
+      tags: [auth]
+      summary: Generate TOTP secret (pending enable)
+  /auth/2fa/enable:
+    post:
+      tags: [auth]
+      summary: Enable TOTP after verification code
+  /auth/2fa/disable:
+    post:
+      tags: [auth]
+      summary: Disable TOTP (code + password)
+  /auth/tokens:
+    get:
+      tags: [auth]
+      summary: List personal access tokens (prefix only)
+    post:
+      tags: [auth]
+      summary: Create personal access token (shown once)
+  /auth/tokens/{id}:
+    delete:
+      tags: [auth]
+      summary: Revoke personal access token
+  /auth/ssh-keys:
+    get:
+      tags: [auth]
+      summary: List SSH public keys
+    post:
+      tags: [auth]
+      summary: Register SSH public key for git
+  /auth/ssh-keys/{id}:
+    delete:
+      tags: [auth]
+      summary: Remove SSH public key
+  /auth/password:
+    post:
+      tags: [auth]
+      summary: Change password (authenticated)
+  /auth/password/forgot:
+    post:
+      tags: [auth]
+      summary: Start password reset by username/email
+  /auth/password/reset:
+    post:
+      tags: [auth]
+      summary: Complete password reset by token
+  /auth/email/verify/request:
+    post:
+      tags: [auth]
+      summary: Send verification email (authenticated)
+  /auth/email/verify/request-public:
+    post:
+      tags: [auth]
+      summary: Resend verification email by username or email (no session)
+  /auth/email/verify/confirm:
+    post:
+      tags: [auth]
+      summary: Confirm email verification token
+  /auth/invites:
+    get:
+      tags: [auth]
+      summary: List invites created by current user
+    post:
+      tags: [auth]
+      summary: Generate invite code
+  /auth/oauth/providers:
+    get:
+      tags: [oauth]
+      summary: OAuth provider availability
+  /auth/oauth/{provider}:
+    get:
+      tags: [oauth]
+      summary: Start OAuth flow
+  /auth/oauth/{provider}/callback:
+    get:
+      tags: [oauth]
+      summary: OAuth callback
+  /auth/oauth/complete:
+    post:
+      tags: [oauth]
+      summary: Complete OAuth signup
+  /auth/oauth/unlink/{provider}:
+    delete:
+      tags: [oauth]
+      summary: Unlink OAuth provider from account
+  /categories:
+    get:
+      tags: [categories]
+      summary: List categories
+  /categories/{slug}:
+    get:
+      tags: [categories]
+      summary: Category details
+  /categories/{slug}/threads:
+    get:
+      tags: [categories]
+      summary: Category feed
+  /categories/{slug}/rules:
+    patch:
+      tags: [categories]
+      summary: Update category rules (category mod)
+  /categories/{slug}/moderators:
+    get:
+      tags: [categories]
+      summary: List category moderators
+    post:
+      tags: [categories]
+      summary: Add category moderator
+  /categories/{slug}/moderators/{userId}:
+    delete:
+      tags: [categories]
+      summary: Remove category moderator
+  /threads:
+    get:
+      tags: [threads]
+      summary: Explore feed with lens/sort/filter
+    post:
+      tags: [threads]
+      summary: Create thread
+  /threads/{id}:
+    get:
+      tags: [threads]
+      summary: Thread details
+    patch:
+      tags: [threads]
+      summary: Edit thread or lock/unlock (author, field mod, platform mod)
+    delete:
+      tags: [threads]
+      summary: Delete thread
+  /threads/{id}/related:
+    get:
+      tags: [threads]
+      summary: Related threads
+  /threads/{id}/resonance-candidates:
+    get:
+      tags: [threads]
+      summary: Candidate minds for collision
+  /threads/{id}/synthesis:
+    get:
+      tags: [threads]
+      summary: Read synthesis
+    put:
+      tags: [threads]
+      summary: Upsert synthesis (participants)
+  /threads/{id}/replies:
+    get:
+      tags: [threads]
+      summary: List replies
+    post:
+      tags: [threads]
+      summary: Add reply
+  /threads/{id}/replies/{replyId}:
+    patch:
+      tags: [threads]
+      summary: Edit reply
+    delete:
+      tags: [threads]
+      summary: Delete reply
+  /votes:
+    post:
+      tags: [votes]
+      summary: Vote on thread/reply
+  /projects:
+    get:
+      tags: [projects]
+      summary: List/search projects
+    post:
+      tags: [projects]
+      summary: Create project
+  /projects/{owner}/{slug}:
+    get:
+      tags: [projects]
+      summary: Project details
+    patch:
+      tags: [projects]
+      summary: Update project metadata
+    delete:
+      tags: [projects]
+      summary: Delete project (owner only)
+  /projects/{owner}/{slug}/tree:
+    get:
+      tags: [projects]
+      summary: Repo file tree
+  /projects/{owner}/{slug}/blob:
+    get:
+      tags: [projects]
+      summary: Get file content
+  /projects/{owner}/{slug}/files:
+    put:
+      tags: [projects]
+      summary: Upsert/delete file on branch (owner push)
+  /projects/{owner}/{slug}/branches:
+    get:
+      tags: [projects]
+      summary: List branches
+    post:
+      tags: [projects]
+      summary: Create branch
+  /projects/{owner}/{slug}/archive.zip:
+    get:
+      tags: [projects]
+      summary: Download zip snapshot
+  /projects/{owner}/{slug}/clone:
+    get:
+      tags: [projects]
+      summary: Clone metadata + zip URL
+  /projects/{owner}/{slug}/pulls:
+    get:
+      tags: [projects]
+      summary: List pull requests
+    post:
+      tags: [projects]
+      summary: Create pull request
+  /projects/{owner}/{slug}/pulls/{number}:
+    get:
+      tags: [projects]
+      summary: Pull request details
+    patch:
+      tags: [projects]
+      summary: Close/reopen pull request
+  /projects/{owner}/{slug}/pulls/{number}/merge:
+    post:
+      tags: [projects]
+      summary: Merge pull request (owner)
+  /projects/{owner}/{slug}/issues:
+    get:
+      tags: [projects]
+      summary: List issues (query status=open|closed|all, label=labelId|none)
+    post:
+      tags: [projects]
+      summary: Create issue (optional labelIds)
+  /projects/{owner}/{slug}/issues/{number}:
+    get:
+      tags: [projects]
+      summary: Issue details
+    patch:
+      tags: [projects]
+      summary: Edit/close issue (optional labelIds)
+  /projects/{owner}/{slug}/labels:
+    get:
+      tags: [projects]
+      summary: List project issue labels
+    post:
+      tags: [projects]
+      summary: Create issue label (maintainer)
+  /projects/{owner}/{slug}/labels/{labelId}:
+    delete:
+      tags: [projects]
+      summary: Delete issue label (maintainer)
+  /projects/{owner}/{slug}/milestones:
+    get:
+      tags: [projects]
+      summary: List milestones
+    post:
+      tags: [projects]
+      summary: Create milestone
+  /projects/{owner}/{slug}/milestones/{milestoneId}:
+    patch:
+      tags: [projects]
+      summary: Update milestone
+    delete:
+      tags: [projects]
+      summary: Delete milestone
+  /projects/{owner}/{slug}/fork:
+    post:
+      tags: [projects]
+      summary: Fork project to your account (optional slug in body)
+  /projects/{owner}/{slug}/actions/runs:
+    get:
+      tags: [projects]
+      summary: Workflow run history
+  /projects/{owner}/{slug}/actions/run:
+    post:
+      tags: [projects]
+      summary: Trigger workflow manually
+  /projects/{owner}/{slug}/collaborators:
+    get:
+      tags: [projects]
+      summary: List project collaborators
+    patch:
+      tags: [projects]
+      summary: Add/update/remove collaborators
+  /projects/{owner}/{slug}/protection:
+    get:
+      tags: [projects]
+      summary: Branch protection rules
+    patch:
+      tags: [projects]
+      summary: Update branch protection
+  /projects/{owner}/{slug}/pulls/{number}/reviews:
+    post:
+      tags: [projects]
+      summary: Submit PR review (approve/request changes/comment)
+  /git/{owner}/{slug}:
+    get:
+      tags: [git]
+      summary: Git transport metadata (remote, bundle, push URLs)
+  /git/{owner}/{slug}/info/refs:
+    get:
+      tags: [git]
+      summary: Git smart HTTP refs (service=git-upload-pack or git-receive-pack)
+  /git/{owner}/{slug}/git-upload-pack:
+    post:
+      tags: [git]
+      summary: Smart HTTP fetch/clone (public or READ+ on private project)
+  /git/{owner}/{slug}/git-receive-pack:
+    post:
+      tags: [git]
+      summary: Smart HTTP push (Basic auth, WRITE+ on project)
+  /git/{owner}/{slug}/clone.bundle:
+    get:
+      tags: [git]
+      summary: Download read-only git bundle
+  /users/search:
+    get:
+      tags: [users]
+      summary: User search
+  /users/{username}:
+    get:
+      tags: [users]
+      summary: Public profile
+  /users/{username}/threads:
+    get:
+      tags: [users]
+      summary: User threads feed
+  /users/{username}/projects:
+    get:
+      tags: [users]
+      summary: Public projects owned by user
+  /orgs:
+    get:
+      tags: [orgs]
+      summary: List/search organizations
+    post:
+      tags: [orgs]
+      summary: Create organization
+  /orgs/mine:
+    get:
+      tags: [orgs]
+      summary: Organizations the current user belongs to
+  /orgs/{slug}:
+    get:
+      tags: [orgs]
+      summary: Organization profile
+  /orgs/{slug}/projects:
+    get:
+      tags: [orgs]
+      summary: List organization projects
+  /orgs/{slug}/members:
+    get:
+      tags: [orgs]
+      summary: List organization members
+    post:
+      tags: [orgs]
+      summary: Add or update member (admin+)
+  /orgs/{slug}/members/{userId}:
+    delete:
+      tags: [orgs]
+      summary: Remove organization member
+  /users/recommendations/minds:
+    get:
+      tags: [users]
+      summary: Compatible minds
+  /users/recommendations/threads:
+    get:
+      tags: [users]
+      summary: Recommended threads
+  /conversations:
+    get:
+      tags: [conversations]
+      summary: List conversations
+    post:
+      tags: [conversations]
+      summary: Open/find DM
+  /conversations/groups:
+    post:
+      tags: [conversations]
+      summary: Create group
+  /conversations/{id}:
+    get:
+      tags: [conversations]
+      summary: Conversation details
+  /conversations/{id}/messages:
+    get:
+      tags: [conversations]
+      summary: List messages
+    post:
+      tags: [conversations]
+      summary: Send message
+  /conversations/{id}/read:
+    post:
+      tags: [conversations]
+      summary: Mark conversation read (read receipt)
+  /conversations/{id}/messages/{mid}:
+    patch:
+      tags: [conversations]
+      summary: Edit message (24h window)
+    delete:
+      tags: [conversations]
+      summary: Soft-delete message
+  /conversations/{id}/messages/{mid}/reactions:
+    post:
+      tags: [conversations]
+      summary: Add reaction to message
+    delete:
+      tags: [conversations]
+      summary: Remove reaction
+  /notifications:
+    get:
+      tags: [notifications]
+      summary: List notifications
+  /notifications/read-all:
+    patch:
+      tags: [notifications]
+      summary: Mark all as read
+  /notifications/{id}/read:
+    patch:
+      tags: [notifications]
+      summary: Mark one as read
+  /message-requests/incoming:
+    get:
+      tags: [message-requests]
+      summary: Incoming dialogue requests
+  /message-requests:
+    post:
+      tags: [message-requests]
+      summary: Send dialogue request
+  /message-requests/{id}:
+    patch:
+      tags: [message-requests]
+      summary: Accept/decline request
+  /search:
+    get:
+      tags: [search]
+      summary: Global search (threads, users, projects, organizations, messages)
+  /reports:
+    post:
+      tags: [reports]
+      summary: Report content
+    get:
+      tags: [reports]
+      summary: Moderator queue
+  /reports/{id}:
+    patch:
+      tags: [reports]
+      summary: Moderator status update
+  /reports/log:
+    get:
+      tags: [reports]
+      summary: Moderator audit log
+  /reports/export:
+    get:
+      tags: [reports]
+      summary: Moderator full export bundle (reports + audit)
+  /reports/export.csv:
+    get:
+      tags: [reports]
+      summary: Moderator CSV export bundle (reports + audit)
+  /appeals:
+    get:
+      tags: [appeals]
+      summary: Moderator ban appeals queue
+    post:
+      tags: [appeals]
+      summary: Submit ban appeal
+  /appeals/me:
+    get:
+      tags: [appeals]
+      summary: Current sanction status and appeal history
+  /appeals/{id}:
+    patch:
+      tags: [appeals]
+      summary: Review ban appeal (accept unbans user)
+  /blocks:
+    get:
+      tags: [blocks]
+      summary: List blocked users
+    post:
+      tags: [blocks]
+      summary: Block user
+  /blocks/{userId}:
+    delete:
+      tags: [blocks]
+      summary: Unblock user
+  /media/config:
+    get:
+      tags: [media]
+      summary: Media storage mode (disabled|local|r2) for clients
+  /media/presign:
+    post:
+      tags: [media]
+      summary: Create upload URL + media row
+  /push/config:
+    get:
+      tags: [push]
+      summary: Web Push VAPID public key and enabled flag
+  /push/subscriptions:
+    get:
+      tags: [push]
+      summary: List push subscriptions for current user
+  /push/subscribe:
+    post:
+      tags: [push]
+      summary: Register browser push subscription
+    delete:
+      tags: [push]
+      summary: Remove push subscription by endpoint
+  /media/{id}/complete:
+    post:
+      tags: [media]
+      summary: Mark uploaded media as READY
+  /translate:
+    post:
+      tags: [translate]
+      summary: Translate text
+  /translate/batch:
+    post:
+      tags: [translate]
+      summary: Translate multiple text items
+  /stats/me:
+    get:
+      tags: [stats]
+      summary: Personal counters
+  /stats/site:
+    get:
+      tags: [stats]
+      summary: Site owner dashboard counters

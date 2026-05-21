@@ -1,0 +1,13 @@
+{
+  "name": "neuron",
+  "private": true,
+  "scripts": {
+    "build": "npm run build --prefix neuron_frontend",
+    "test": "npm run test --prefix neuron_backend/neuron_backend",
+    "verify:deploy": "sh scripts/verify-deploy.sh",
+    "ops:vapid": "sh scripts/generate-vapid-keys.sh",
+    "ops:backup-cron": "sh scripts/install-backup-cron.sh",
+    "dev:api": "npm run dev --prefix neuron_backend/neuron_backend",
+    "dev:web": "npm run dev --prefix neuron_frontend"
+  }
+}

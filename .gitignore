@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Environment & secrets (single root .env — see .env.example)
+.env
+.env.local
+.env.*.local
+neuron_backend/neuron_backend/.env
+neuron_frontend/.env.local
+
+# Build output
+.next/
+out/
+dist/
+build/
+
+# Prisma
+neuron_backend/neuron_backend/node_modules/.prisma/
+
+# Logs & OS
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Cursor assets (screenshots from chats)
+assets/
+
+# Test / coverage
+coverage/
+.nyc_output/
+
+# Local media + DB backups (budget VPS)
+neuron_backend/neuron_backend/data/
+backups/

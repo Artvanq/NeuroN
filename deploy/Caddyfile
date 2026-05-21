@@ -1,0 +1,14 @@
+# Example Caddy reverse proxy for single-VPS budget deploy.
+# Replace example.com / api.example.com with your domains.
+# Install: https://caddyserver.com/docs/install
+# Place at /etc/caddy/Caddyfile and: sudo systemctl reload caddy
+
+example.com {
+	encode gzip
+	reverse_proxy 127.0.0.1:3000
+}
+
+api.example.com {
+	encode gzip
+	reverse_proxy 127.0.0.1:4000
+}

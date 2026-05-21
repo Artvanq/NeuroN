@@ -1,0 +1,23 @@
+{
+  "comment": "Cloudflare R2 lifecycle — adapt prefixes to your upload paths",
+  "rules": [
+    {
+      "id": "abort-incomplete-multipart",
+      "status": "Enabled",
+      "abortIncompleteMultipartUpload": { "daysAfterInitiation": 7 }
+    },
+    {
+      "id": "expire-temp-uploads",
+      "status": "Enabled",
+      "filter": { "prefix": "tmp/" },
+      "expiration": { "days": 1 }
+    },
+    {
+      "id": "expire-old-orphan-uploads",
+      "status": "Disabled",
+      "filter": { "prefix": "uploads/" },
+      "expiration": { "days": 365 },
+      "comment": "Enable only if you track DB↔object GC separately"
+    }
+  ]
+}

@@ -1,0 +1,116 @@
+# Production on a single VPS — no paid SaaS required.
+# Usage: cp .env.budget.example .env && docker compose -f docker-compose.prod.yml up -d --build
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - neuron_redis:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-neuron}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-neuron}
+    volumes:
+      - neuron_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-neuron} -d ${POSTGRES_DB:-neuron}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./neuron_backend/neuron_backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-neuron}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-neuron}
+      REDIS_URL: redis://redis:6379
+      MEDIA_STORAGE: disabled
+      API_PUBLIC_URL: ${API_PUBLIC_URL:-http://localhost:4000}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      REQUIRE_EMAIL_VERIFICATION: ${REQUIRE_EMAIL_VERIFICATION:-true}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM: ${RESEND_FROM:-}
+    ports:
+      - '${API_PORT:-4000}:4000'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:4000/api/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  analytics-worker:
+    build:
+      context: ./neuron_backend/neuron_backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: npm run worker:analytics
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-neuron}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-neuron}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  digest-worker:
+    build:
+      context: ./neuron_backend/neuron_backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: npm run worker:digest
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-neuron}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-neuron}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./neuron_frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+    ports:
+      - '${WEB_PORT:-3000}:3000'
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  neuron_pg_data:
+  neuron_redis:
