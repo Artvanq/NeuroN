@@ -5,8 +5,16 @@ node_modules/
 .env
 .env.local
 .env.*.local
+.env.budget
+.env.coolify
 neuron_backend/neuron_backend/.env
 neuron_frontend/.env.local
+
+# Docker — local overrides / copies with real credentials (never commit)
+docker-compose.override.yml
+docker-compose.local.yml
+docker-compose.*.local.yml
+docker-compose.secrets.yml
 
 # Build output
 .next/

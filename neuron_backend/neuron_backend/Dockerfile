@@ -3,6 +3,7 @@ WORKDIR /app
 RUN apk add --no-cache openssl
 COPY package*.json ./
 COPY prisma ./prisma
+COPY scripts/prisma-postinstall.js ./scripts/prisma-postinstall.js
 RUN npm ci && npx prisma generate
 COPY . .
 EXPOSE 4000
