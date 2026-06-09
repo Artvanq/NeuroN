@@ -1752,8 +1752,11 @@ button { font-family: inherit; }
 }
 
 .manifesto-app {
+  position: relative;
+  z-index: 2;
   max-width: var(--max-wide);
-  padding-bottom: 4rem;
+  margin: 0 auto;
+  padding: 0 1.5rem 4rem;
   color: var(--text-secondary);
 }
 
@@ -1912,12 +1915,19 @@ button { font-family: inherit; }
   z-index: 0;
 }
 
-.manifesto {
+.landing-shell {
   position: relative;
   z-index: 2;
-  max-width: 46rem;
+  max-width: var(--max-wide);
   margin: 0 auto;
   padding: 0 1.5rem 6rem;
+}
+
+.manifesto {
+  position: relative;
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 0;
   line-height: 1.7;
   color: var(--text-secondary);
 }
@@ -1953,8 +1963,18 @@ button { font-family: inherit; }
 }
 
 @media (min-width: 960px) {
+  .manifesto-nav {
+    flex-wrap: nowrap;
+  }
+
   .manifesto-nav-sections {
     display: flex;
+    min-width: 0;
+  }
+
+  .manifesto-logo,
+  .manifesto-nav-actions {
+    flex-shrink: 0;
   }
 }
 .manifesto-logo {
@@ -3447,7 +3467,7 @@ button { font-family: inherit; }
 
 @media (max-width: 768px) {
   .nav-auth { flex-wrap: wrap; justify-content: flex-end; gap: 0.4rem; }
-  .locale-switch { order: -1; }
+  .nav-auth .locale-switch { order: -1; }
 }
 
 /* ═══════════════════════════════════════════════════════════

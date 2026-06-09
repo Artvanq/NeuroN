@@ -83,9 +83,10 @@ export default function Home() {
         <NeuronCanvas density={0.14} intensity={0.95} />
         <div className="grain" aria-hidden />
 
-        <div className="manifesto">
+        <div className="landing-shell">
           <ManifestoNav variant="landing" sections={MANIFEST_SECTIONS} />
 
+          <div className="manifesto">
           <header className="manifesto-hero">
             <p className="manifesto-eyebrow reveal">{t('manifest_eyebrow')}</p>
             <h1 className="reveal" data-delay="1">
@@ -258,6 +259,7 @@ export default function Home() {
             </Link>
             <p className="manifesto-signoff">Neuron · for those who think differently together</p>
           </footer>
+          </div>
         </div>
       </div>
     </>
