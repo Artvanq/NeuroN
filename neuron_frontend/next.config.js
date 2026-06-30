@@ -33,6 +33,18 @@ const nextConfig = {
       },
     ];
   },
+  webpack(config, { webpack }) {
+    // Translation source files (lib/locales/translate/*.json and README.md) are
+    // build-time inputs for scripts/compile-locales.mjs — never import them into
+    // the app bundle. This guards against any accidental dynamic require/import
+    // context globbing that folder and choking on the .md file.
+    config.plugins.push(
+      new webpack.IgnorePlugin({
+        resourceRegExp: /[\\/]lib[\\/]locales[\\/]translate[\\/]/,
+      })
+    );
+    return config;
+  },
 };
 
 module.exports = nextConfig;

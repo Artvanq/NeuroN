@@ -47,11 +47,46 @@ export async function loadLocaleBundle(code) {
   }
 }
 
+// Static require map — avoids a dynamic require() context that would make
+// webpack scan the whole lib/locales/ folder (and try to bundle non-JS files
+// like translate/*.json and README.md, breaking the build).
+const syncLoaders = {
+  en: () => en,
+  uk: () => require('./uk').default,
+  ru: () => require('./ru').default,
+  de: () => require('./de').default,
+  fr: () => require('./fr').default,
+  es: () => require('./es').default,
+  pt: () => require('./pt').default,
+  it: () => require('./it').default,
+  pl: () => require('./pl').default,
+  nl: () => require('./nl').default,
+  tr: () => require('./tr').default,
+  vi: () => require('./vi').default,
+  id: () => require('./id').default,
+  th: () => require('./th').default,
+  hi: () => require('./hi').default,
+  zh: () => require('./zh').default,
+  ja: () => require('./ja').default,
+  ko: () => require('./ko').default,
+  ar: () => require('./ar').default,
+  he: () => require('./he').default,
+  fa: () => require('./fa').default,
+  sv: () => require('./sv').default,
+  cs: () => require('./cs').default,
+  ro: () => require('./ro').default,
+  hu: () => require('./hu').default,
+  el: () => require('./el').default,
+  bn: () => require('./bn').default,
+  ms: () => require('./ms').default,
+};
+
 export function loadLocaleBundleSync(code) {
   if (cache[code]) return cache[code];
+  const load = syncLoaders[code];
+  if (!load) return en;
   try {
-    // eslint-disable-next-line import/no-dynamic-require, global-require
-    const bundle = require(`./${code}`).default;
+    const bundle = load();
     cache[code] = { ...en, ...bundle };
     return cache[code];
   } catch {
