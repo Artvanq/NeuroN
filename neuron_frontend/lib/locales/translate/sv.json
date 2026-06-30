@@ -1,4 +1,4 @@
-export default {
+{
   "nav_explore": "Utforska",
   "nav_fields": "Fält",
   "nav_dialogue": "Dialog",
@@ -260,5 +260,5 @@ export default {
   "manifest_mechanism_label": "Mekanism",
   "manifest_mechanism": "Inte en rekommendationsalgoritm, utan resonans. En idé hittar den som ska fullborda den — så som en neuron söker en synaps.",
   "manifest_depth_principle": "Algoritmer lyfter fram det som utlöser reaktion — inte det som utvecklar tänkandet. Neuron har inget algoritmiskt flöde. Det finns bara resonans.",
-  "manifest_closing": "En ensam neuron betyder ingenting. Men när neuroner kopplas samman — uppstår en tanke som inte fanns förut.",
-};
+  "manifest_closing": "En ensam neuron betyder ingenting. Men när neuroner kopplas samman — uppstår en tanke som inte fanns förut."
+}

@@ -1,4 +1,4 @@
-export default {
+{
   "nav_explore": "Objevovat",
   "nav_fields": "Obory",
   "nav_dialogue": "Dialog",
@@ -260,5 +260,5 @@ export default {
   "manifest_mechanism_label": "Mechanismus",
   "manifest_mechanism": "Ne doporučovací algoritmus, ale rezonance. Myšlenka najde toho, kdo ji dokončí — tak jako neuron hledá synapsi.",
   "manifest_depth_principle": "Algoritmy propagují to, co vyvolá reakci — ne to, co rozvíjí myšlení. Neuron nemá algoritmický kanál. Je tu jen rezonance.",
-  "manifest_closing": "Jediný neuron neznamená nic. Ale když se neurony propojí — objeví se myšlenka, která dříve neexistovala.",
-};
+  "manifest_closing": "Jediný neuron neznamená nic. Ale když se neurony propojí — objeví se myšlenka, která dříve neexistovala."
+}

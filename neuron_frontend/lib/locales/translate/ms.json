@@ -1,4 +1,4 @@
-export default {
+{
   "nav_explore": "Terokai",
   "nav_fields": "Bidang",
   "nav_dialogue": "Dialog",
@@ -260,5 +260,5 @@ export default {
   "manifest_mechanism_label": "Mekanisme",
   "manifest_mechanism": "Bukan algoritma cadangan, tetapi resonans. Sesuatu idea menemui orang yang akan melengkapkannya — seperti neuron mencari sinaps.",
   "manifest_depth_principle": "Algoritma mempromosikan apa yang mencetuskan reaksi — bukan apa yang mengembangkan pemikiran. Neuron tiada suapan beralgoritma. Hanya ada resonans.",
-  "manifest_closing": "Satu neuron tidak bermakna apa-apa. Tetapi apabila neuron berhubung — muncul satu pemikiran yang tidak wujud sebelum ini.",
-};
+  "manifest_closing": "Satu neuron tidak bermakna apa-apa. Tetapi apabila neuron berhubung — muncul satu pemikiran yang tidak wujud sebelum ini."
+}

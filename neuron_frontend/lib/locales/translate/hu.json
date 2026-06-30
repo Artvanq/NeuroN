@@ -1,4 +1,4 @@
-export default {
+{
   "nav_explore": "Felfedezés",
   "nav_fields": "Területek",
   "nav_dialogue": "Párbeszéd",
@@ -260,5 +260,5 @@ export default {
   "manifest_mechanism_label": "Mechanizmus",
   "manifest_mechanism": "Nem ajánló algoritmus, hanem rezonancia. Egy ötlet megtalálja azt, aki kiegészíti — ahogy a neuron szinapszist keres.",
   "manifest_depth_principle": "Az algoritmusok azt népszerűsítik, ami reakciót vált ki — nem azt, ami fejleszti a gondolkodást. A Neuronnak nincs algoritmikus hírfolyama. Csak rezonancia van.",
-  "manifest_closing": "Egyetlen neuron semmit sem jelent. De amikor a neuronok összekapcsolódnak — megjelenik egy gondolat, amely korábban nem létezett.",
-};
+  "manifest_closing": "Egyetlen neuron semmit sem jelent. De amikor a neuronok összekapcsolódnak — megjelenik egy gondolat, amely korábban nem létezett."
+}

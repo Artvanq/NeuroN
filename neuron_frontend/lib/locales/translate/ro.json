@@ -1,4 +1,4 @@
-export default {
+{
   "nav_explore": "Explorează",
   "nav_fields": "Domenii",
   "nav_dialogue": "Dialog",
@@ -260,5 +260,5 @@ export default {
   "manifest_mechanism_label": "Mecanism",
   "manifest_mechanism": "Nu un algoritm de recomandare, ci rezonanță. O idee îl găsește pe cel care o va completa — așa cum un neuron caută o sinapsă.",
   "manifest_depth_principle": "Algoritmii promovează ce declanșează reacție — nu ce dezvoltă gândirea. Neuron nu are flux algoritmic. Există doar rezonanță.",
-  "manifest_closing": "Un singur neuron nu înseamnă nimic. Dar când neuronii se conectează — apare un gând care nu exista înainte.",
-};
+  "manifest_closing": "Un singur neuron nu înseamnă nimic. Dar când neuronii se conectează — apare un gând care nu exista înainte."
+}

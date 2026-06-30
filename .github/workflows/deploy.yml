@@ -3,6 +3,8 @@ name: deploy
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
 
@@ -102,17 +104,61 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: [verify, migrate, load-smoke]
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+    # Auto-deploy on push to main and on version tags; manual run always allowed.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      startsWith(github.ref, 'refs/tags/v') ||
+      github.ref == 'refs/heads/main'
+    env:
+      COOLIFY_WEBHOOK: ${{ secrets.COOLIFY_WEBHOOK }}
+      COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+      DEPLOY_API_URL: ${{ secrets.DEPLOY_API_URL }}
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      DEPLOY_WAIT_SECONDS: ${{ vars.DEPLOY_WAIT_SECONDS || '60' }}
     steps:
       - uses: actions/checkout@v4
-      - name: Deploy placeholder
+
+      - name: Trigger Coolify redeploy
+        if: env.COOLIFY_WEBHOOK != ''
         run: |
-          echo "Coolify/VPS: push image or git deploy, then npm run verify:deploy -- https://api.yourdomain.com"
-          echo "Budget compose: ./scripts/deploy-vps.sh (see docs/BUDGET-DEPLOY.md)."
-          if [ -n "${{ secrets.DEPLOY_API_URL }}" ]; then
-            chmod +x scripts/verify-deploy.sh
-            ./scripts/verify-deploy.sh "${{ secrets.DEPLOY_API_URL }}"
+          echo "Triggering Coolify redeploy..."
+          if [ -n "$COOLIFY_TOKEN" ]; then
+            code=$(curl -fsS -o /tmp/coolify.out -w '%{http_code}' \
+              -H "Authorization: Bearer $COOLIFY_TOKEN" \
+              "$COOLIFY_WEBHOOK") || { echo "Coolify webhook failed"; cat /tmp/coolify.out; exit 1; }
+          else
+            code=$(curl -fsS -o /tmp/coolify.out -w '%{http_code}' "$COOLIFY_WEBHOOK") \
+              || { echo "Coolify webhook failed"; cat /tmp/coolify.out; exit 1; }
           fi
-          if [ -n "${{ secrets.RAILWAY_TOKEN }}" ]; then
-            echo "RAILWAY_TOKEN is set — add railway up per service when ready."
-          fi
+          echo "Coolify responded HTTP $code"
+          cat /tmp/coolify.out || true
+
+      - name: Wait for rollout
+        if: env.DEPLOY_API_URL != ''
+        run: sleep "$DEPLOY_WAIT_SECONDS"
+
+      - name: Verify deploy (health check)
+        if: env.DEPLOY_API_URL != ''
+        run: |
+          chmod +x scripts/verify-deploy.sh
+          # Retry health check while the new release finishes rolling out.
+          for i in 1 2 3 4 5 6; do
+            if ./scripts/verify-deploy.sh "$DEPLOY_API_URL"; then
+              echo "Deploy verified."; exit 0
+            fi
+            echo "Health not ready yet (attempt $i) — retrying in 20s..."
+            sleep 20
+          done
+          echo "Deploy verification failed after retries."
+          exit 1
+
+      - name: No deploy target configured
+        if: env.COOLIFY_WEBHOOK == '' && env.DEPLOY_API_URL == ''
+        run: |
+          echo "No COOLIFY_WEBHOOK or DEPLOY_API_URL secret set — nothing to deploy."
+          echo "Set repo secrets to enable auto-deploy (see docs/COOLIFY.md -> Auto-redeploy)."
+          echo "Budget compose alternative: ./scripts/deploy-vps.sh (docs/BUDGET-DEPLOY.md)."
+
+      - name: Railway note
+        if: env.RAILWAY_TOKEN != ''
+        run: echo "RAILWAY_TOKEN is set - add 'railway up' per service when ready."

@@ -1,4 +1,4 @@
-export default {
+{
   "nav_explore": "探索",
   "nav_fields": "分野",
   "nav_dialogue": "対話",
@@ -260,5 +260,5 @@ export default {
   "manifest_mechanism_label": "メカニズム",
   "manifest_mechanism": "推薦アルゴリズムではなく、共鳴。アイデアは、それを完成させる者を見つける——ニューロンがシナプスを求めるように。",
   "manifest_depth_principle": "アルゴリズムは反応を引き起こすものを押し上げる——思考を育てるものではなく。Neuron にアルゴリズムのフィードはない。あるのは共鳴だけ。",
-  "manifest_closing": "一つのニューロンは何も意味しない。だがニューロンがつながるとき——かつて存在しなかった思考が現れる。",
-};
+  "manifest_closing": "一つのニューロンは何も意味しない。だがニューロンがつながるとき——かつて存在しなかった思考が現れる。"
+}
