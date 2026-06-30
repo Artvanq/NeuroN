@@ -6,31 +6,19 @@ import { useI18n } from '../lib/I18nContext';
 import useReveal from '../lib/useReveal';
 
 const EVOLUTION = [
-  { from: 'Atoms combined', to: 'Molecules' },
-  { from: 'Molecules combined', to: 'Cells' },
-  { from: 'Cells combined', to: 'Organism' },
-  { from: 'Neurons combined', to: 'Consciousness' },
-  { from: 'Consciousnesses combined', to: 'Culture' },
-  { from: 'Intellects will combine', to: 'Superintelligence' },
+  { from: 'evo_1_from', to: 'evo_1_to' },
+  { from: 'evo_2_from', to: 'evo_2_to' },
+  { from: 'evo_3_from', to: 'evo_3_to' },
+  { from: 'evo_4_from', to: 'evo_4_to' },
+  { from: 'evo_5_from', to: 'evo_5_to' },
+  { from: 'evo_6_from', to: 'evo_6_to' },
 ];
 
 const COMPETITORS = [
-  {
-    name: 'GitHub',
-    text: 'Code without ideas. Technique without philosophy. Tools without the question of why.',
-  },
-  {
-    name: 'LinkedIn',
-    text: 'Connections without depth. A career showcase. Everyone performing success.',
-  },
-  {
-    name: 'Reddit',
-    text: 'Chaos and anonymity. Memes defeat thought. Depth drowns in noise.',
-  },
-  {
-    name: 'Twitter / X',
-    text: 'Fragments without dialogue. Provocation instead of thinking. Reach instead of meaning.',
-  },
+  { name: 'GitHub', textKey: 'comp_github_text' },
+  { name: 'LinkedIn', textKey: 'comp_linkedin_text' },
+  { name: 'Reddit', textKey: 'comp_reddit_text' },
+  { name: 'Twitter / X', textKey: 'comp_twitter_text' },
 ];
 
 const MANIFEST_SECTIONS = [
@@ -42,26 +30,11 @@ const MANIFEST_SECTIONS = [
 ];
 
 const PRINCIPLES = [
-  {
-    title: 'The question matters more than the answer',
-    text: 'A good question attracts the right people. A ready answer closes dialogue. Neuron is built around open questions with no single correct answer.',
-  },
-  {
-    title: 'Friction creates the spark',
-    text: 'Echo chambers kill thought. You need people who think similarly — but not identically. The collision of different perspectives on one question creates what existed in none of them alone.',
-  },
-  {
-    title: 'Depth over virality',
-    key: 'manifest_depth_principle',
-  },
-  {
-    title: 'Creation over consumption',
-    text: 'Most platforms turn people into audiences. Neuron exists only as a place where people create — ideas, projects, connections, thoughts.',
-  },
-  {
-    title: 'A living mind over status',
-    text: 'There are no résumés, followers, or achievements here. Only how you think right now. Neuron finds you not those who are successful — but those who are compatible.',
-  },
+  { titleKey: 'principle_1_title', textKey: 'principle_1_text' },
+  { titleKey: 'principle_2_title', textKey: 'principle_2_text' },
+  { titleKey: 'principle_3_title', textKey: 'manifest_depth_principle' },
+  { titleKey: 'principle_4_title', textKey: 'principle_4_text' },
+  { titleKey: 'principle_5_title', textKey: 'principle_5_text' },
 ];
 
 export default function Home() {
@@ -103,152 +76,120 @@ export default function Home() {
             <div className="hero-signal reveal" data-delay="3" aria-hidden>
               <span className="hero-signal-dot" />
               <span className="hero-signal-text">
-                synapse forming · listening for the next thought
+                {t('manifest_hero_signal')}
               </span>
             </div>
           </header>
 
           <section className="manifesto-section" id="problem">
-            <p className="section-num reveal">01 — The problem</p>
-            <h2 className="reveal" data-delay="1">Intellects are isolated</h2>
+            <p className="section-num reveal">{t('manifest_s1_num')}</p>
+            <h2 className="reveal" data-delay="1">{t('manifest_s1_h2')}</h2>
             <p className="reveal" data-delay="2">
-              There are millions of people thinking about big questions. They sense
-              that the standard paths — career, status, consumption — are not it.
-              They don&apos;t need just conversation partners. They need kindred
-              minds with whom they can build something new.
+              {t('manifest_s1_p1')}
             </p>
             <p className="manifesto-emphasis reveal" data-delay="3">
-              But the place for this does not exist.
+              {t('manifest_s1_emphasis')}
             </p>
 
             <ul className="competitor-list">
               {COMPETITORS.map((c, i) => (
                 <li key={c.name} className="reveal" data-delay={(i % 4) + 1}>
                   <strong>{c.name}</strong>
-                  <span>{c.text}</span>
+                  <span>{t(c.textKey)}</span>
                 </li>
               ))}
             </ul>
             <p className="manifesto-muted reveal">
-              Edge.org — a closed club. LessWrong — one topic. Clubhouse — dead.
-              Are.na — creative, not scientific. Nobody got it right.
+              {t('manifest_s1_muted')}
             </p>
           </section>
 
           <section className="manifesto-section" id="solution">
-            <p className="section-num reveal">02 — The nature of the solution</p>
-            <h2 className="reveal" data-delay="1">Evolution as law</h2>
+            <p className="section-num reveal">{t('manifest_s2_num')}</p>
+            <h2 className="reveal" data-delay="1">{t('manifest_s2_h2')}</h2>
             <p className="reveal" data-delay="2">
-              The entire history of life can be described by one principle: union
-              creates new quality. This is not a metaphor. It is a physical law —
-              <em> emergence</em>.
+              {t('manifest_s2_p1')}<em>{t('manifest_s2_emergence')}</em>.
             </p>
 
             <ol className="evolution-chain">
               {EVOLUTION.map((step, i) => (
                 <li key={step.from} className="reveal" data-delay={(i % 4) + 1}>
                   <span className="evo-index">{String(i + 1).padStart(2, '0')}</span>
-                  <span className="evo-from">{step.from}</span>
+                  <span className="evo-from">{t(step.from)}</span>
                   <span className="evo-arrow">→</span>
-                  <span className="evo-to">{step.to}</span>
+                  <span className="evo-to">{t(step.to)}</span>
                 </li>
               ))}
             </ol>
 
             <p className="reveal">
-              No single neuron thinks. But billions together create consciousness —
-              a phenomenon that existed in none of them individually. This is
-              synesthesia at the level of mind — the highest degree of emergence.
+              {t('manifest_s2_p2')}
             </p>
             <p className="reveal" data-delay="1">
-              Culture partially united minds. But it is not yet synesthesia. People
-              are near each other — but not merged. Each thinks in their own
-              channel.
+              {t('manifest_s2_p3')}
             </p>
             <p className="manifesto-emphasis reveal" data-delay="2">
-              The true next step is when a physicist, a poet, and a programmer
-              don&apos;t argue — but create a thought that none of them could have
-              created alone.
+              {t('manifest_s2_emphasis')}
             </p>
           </section>
 
           <section className="manifesto-section manifesto-highlight reveal" id="neuron">
-            <p className="section-num">03 — Neuron</p>
+            <p className="section-num">{t('manifest_s3_num')}</p>
             <h2>{t('manifest_neuron_h2')}</h2>
             <p>{t('manifest_neuron_p1')}</p>
             <p>{t('manifest_neuron_p2')}</p>
 
             <dl className="neuron-grid">
               <div>
-                <dt>Problem</dt>
-                <dd>
-                  Intellects are isolated. Intelligent people think alone or drown
-                  in noise.
-                </dd>
+                <dt>{t('manifest_dt_problem')}</dt>
+                <dd>{t('manifest_dd_problem')}</dd>
               </div>
               <div>
-                <dt>Solution</dt>
-                <dd>
-                  An environment where people connect through questions — not
-                  profiles, not achievements, but living thoughts that burn inside
-                  them.
-                </dd>
+                <dt>{t('manifest_dt_solution')}</dt>
+                <dd>{t('manifest_dd_solution')}</dd>
               </div>
               <div>
                 <dt>{t('manifest_mechanism_label')}</dt>
                 <dd>{t('manifest_mechanism')}</dd>
               </div>
               <div>
-                <dt>Value</dt>
-                <dd>
-                  What cannot be obtained alone. A thought that emerges only from
-                  the collision of different minds.
-                </dd>
+                <dt>{t('manifest_dt_value')}</dt>
+                <dd>{t('manifest_dd_value')}</dd>
               </div>
               <div>
-                <dt>Incentive</dt>
-                <dd>
-                  You don&apos;t come for content. You come because here, finally,
-                  are people who think the same way — but differently.
-                </dd>
+                <dt>{t('manifest_dt_incentive')}</dt>
+                <dd>{t('manifest_dd_incentive')}</dd>
               </div>
             </dl>
           </section>
 
           <section className="manifesto-section" id="principles">
-            <p className="section-num reveal">04 — Principles</p>
-            <h2 className="reveal" data-delay="1">How Neuron works</h2>
+            <p className="section-num reveal">{t('manifest_s4_num')}</p>
+            <h2 className="reveal" data-delay="1">{t('manifest_s4_h2')}</h2>
             <ul className="principles-list">
               {PRINCIPLES.map((p, i) => (
-                <li key={p.title} className="reveal" data-delay={(i % 4) + 1}>
-                  <h3>{p.title}</h3>
-                  <p>{p.key ? t(p.key) : p.text}</p>
+                <li key={p.titleKey} className="reveal" data-delay={(i % 4) + 1}>
+                  <h3>{t(p.titleKey)}</h3>
+                  <p>{t(p.textKey)}</p>
                 </li>
               ))}
             </ul>
           </section>
 
           <section className="manifesto-section" id="distribution">
-            <p className="section-num reveal">05 — Distribution</p>
-            <h2 className="reveal" data-delay="1">Why this will spread</h2>
+            <p className="section-num reveal">{t('manifest_s5_num')}</p>
+            <h2 className="reveal" data-delay="1">{t('manifest_s5_h2')}</h2>
             <p className="reveal" data-delay="2">
-              Satoshi published nine pages — and the world built Bitcoin without
-              him. Not because there was a good presentation. Because the idea was
-              precise enough that those who read it could not help but act.
+              {t('manifest_s5_p1')}
             </p>
             <p className="reveal">
-              Neuron does not need advertising. It needs the voice of a founder
-              speaking the truth.
+              {t('manifest_s5_p2')}
             </p>
             <p className="reveal" data-delay="1">
-              Intelligent people are not searching for another product. They are
-              searching for a place where there are finally people who think the
-              same way. When they find it — they bring others. Not because they are
-              asked. Because they cannot help but share.
+              {t('manifest_s5_p3')}
             </p>
             <p className="manifesto-emphasis reveal" data-delay="2">
-              Ten right people matter more than a million random ones. The first ten
-              create the culture. The culture attracts the next.
+              {t('manifest_s5_emphasis')}
             </p>
           </section>
 
@@ -257,7 +198,7 @@ export default function Home() {
             <Link href="/explore" className="manifesto-cta manifesto-cta-lg">
               {t('manifest_enter')}
             </Link>
-            <p className="manifesto-signoff">Neuron · for those who think differently together</p>
+            <p className="manifesto-signoff">{t('manifest_signoff')}</p>
           </footer>
           </div>
         </div>
