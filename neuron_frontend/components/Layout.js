@@ -67,7 +67,7 @@ export default function Layout({ children, title, wide, chromeless, manifesto })
           <div className="grain" aria-hidden />
           <div className={`manifesto manifesto-app${wide ? ' manifesto-wide' : ''}`}>
             <ManifestoNav variant="app" />
-            <div className="manifesto-app-body">{children}</div>
+            <main className="manifesto-app-body">{children}</main>
           </div>
           {showAppChrome && (
             <>

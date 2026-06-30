@@ -37,9 +37,10 @@ test('terms page is reachable', async ({ page }) => {
   await expect(page.getByRole('main')).toContainText(/terms|use/i);
 });
 
-test('projects page redirects guests to login', async ({ page }) => {
+test('projects page is browsable by guests', async ({ page }) => {
   await page.goto('/projects');
-  await expect(page).toHaveURL(/\/login/);
+  await expect(page).toHaveURL(/\/projects/);
+  await expect(page.getByRole('main')).toBeVisible();
 });
 
 test('settings page redirects guests to login', async ({ page }) => {
