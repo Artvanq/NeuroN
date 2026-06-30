@@ -12,9 +12,7 @@
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "worker:analytics": "node workers/analyticsWorker.js",
-    "worker:digest": "node workers/digestWorker.js",
-    "test": "node --test tests/*.test.js",
-    "test:load": "node --test tests/load.health.test.js"
+    "worker:digest": "node workers/digestWorker.js"
   },
   "devDependencies": {
     "nodemon": "^3.1.9",

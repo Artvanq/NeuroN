@@ -7,9 +7,7 @@
     "i18n:build": "node scripts/build-ui-locales.mjs",
     "i18n:compile": "node scripts/compile-locales.mjs",
     "build": "next build",
-    "start": "next start",
-    "test:e2e": "playwright test",
-    "test:e2e:install": "playwright install chromium"
+    "start": "next start"
   },
   "dependencies": {
     "@sentry/react": "^9.47.1",
