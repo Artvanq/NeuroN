@@ -28,6 +28,14 @@ const PROVIDERS = {
     tokenUrl: 'https://www.linkedin.com/oauth/v2/accessToken',
     profileUrl: 'https://api.linkedin.com/v2/userinfo',
   },
+  google: {
+    key: 'GOOGLE',
+    name: 'Google',
+    scopes: 'openid email profile',
+    authorizeUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+    tokenUrl: 'https://oauth2.googleapis.com/token',
+    profileUrl: 'https://openidconnect.googleapis.com/v1/userinfo',
+  },
 };
 
 function getProvider(slug) {
@@ -200,10 +208,32 @@ async function fetchLinkedInProfile(accessToken) {
   };
 }
 
+async function fetchGoogleProfile(accessToken) {
+  const res = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error_description || data.error || 'Google profile failed');
+  const usernameHint = (data.email || data.name || 'google')
+    .split('@')[0]
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, '')
+    .slice(0, 24);
+  return {
+    providerUserId: String(data.sub),
+    usernameHint,
+    displayName: data.name || usernameHint,
+    avatarUrl: data.picture || null,
+    profileUrl: null,
+    email: data.email_verified ? data.email : null,
+  };
+}
+
 async function fetchProviderProfile(providerSlug, accessToken) {
   if (providerSlug === 'github') return fetchGitHubProfile(accessToken);
   if (providerSlug === 'reddit') return fetchRedditProfile(accessToken);
   if (providerSlug === 'linkedin') return fetchLinkedInProfile(accessToken);
+  if (providerSlug === 'google') return fetchGoogleProfile(accessToken);
   throw new Error('Unknown provider');
 }
 

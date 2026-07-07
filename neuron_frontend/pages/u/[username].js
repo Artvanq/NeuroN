@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/router';
+import Link from 'next/link';
 import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
 import ThreadFeedSection from '../../components/ThreadFeedSection';
@@ -121,7 +122,15 @@ export default function UserProfilePage() {
               )}
             </>
           }
-          action={!isSelf ? <ProfileActions user={user} onBlockChange={(access) => setUser((u) => ({ ...u, access }))} /> : null}
+          action={
+            isSelf ? (
+              <Link href="/settings" className="btn btn-ghost btn-sm">
+                Edit profile
+              </Link>
+            ) : (
+              <ProfileActions user={user} onBlockChange={(access) => setUser((u) => ({ ...u, access }))} />
+            )
+          }
         />
       </div>
 

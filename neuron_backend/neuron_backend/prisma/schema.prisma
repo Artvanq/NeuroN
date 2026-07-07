@@ -11,6 +11,7 @@ enum OAuthProvider {
   GITHUB
   REDDIT
   LINKEDIN
+  GOOGLE
 }
 
 enum ProfileVisibility {

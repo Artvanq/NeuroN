@@ -565,7 +565,7 @@ export default function SettingsPage() {
         <section className="panel">
           <h2>Connected accounts</h2>
           <p className="muted">
-            Link GitHub, Reddit, or LinkedIn — like signing in on those platforms, but your Neuron identity stays one username.
+            Link GitHub, Reddit, LinkedIn, or Google — like signing in on those platforms, but your Neuron identity stays one username.
           </p>
           {linkedProviders.length > 0 && (
             <p className="linked-providers">

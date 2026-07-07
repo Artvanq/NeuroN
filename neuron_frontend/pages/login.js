@@ -113,8 +113,6 @@ export default function LoginPage() {
           </section>
         )}
 
-        <OAuthButtons />
-
         <form className="form panel" onSubmit={handleSubmit}>
           <label>
             Username
@@ -190,6 +188,9 @@ export default function LoginPage() {
             <Link href="/forgot-password">Forgot password?</Link>
           </p>
         </form>
+
+        <OAuthButtons />
+
         <p className="muted" style={{ textAlign: 'center' }}>
           New here? <Link href="/register">Join with invite</Link>
         </p>

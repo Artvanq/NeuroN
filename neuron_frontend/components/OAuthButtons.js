@@ -6,6 +6,7 @@ const PROVIDERS = [
   { slug: 'github', label: 'GitHub', icon: '◆' },
   { slug: 'reddit', label: 'Reddit', icon: '●' },
   { slug: 'linkedin', label: 'LinkedIn', icon: 'in' },
+  { slug: 'google', label: 'Google', icon: 'G' },
 ];
 
 export default function OAuthButtons({ link = false, className = '' }) {

@@ -2397,7 +2397,7 @@ button { font-family: inherit; }
 }
 .auth-page .panel { margin-top: 1.5rem; }
 
-.oauth-buttons { margin-bottom: 1.25rem; }
+.oauth-buttons { margin-top: 1.5rem; }
 .oauth-divider {
   display: flex;
   align-items: center;
@@ -2440,6 +2440,7 @@ button { font-family: inherit; }
 .oauth-github { border-color: #30363d; }
 .oauth-reddit { border-color: #ff4500; color: #ff6a33; }
 .oauth-linkedin { border-color: #0a66c2; color: #378fe9; }
+.oauth-google { border-color: #4285f4; color: #8ab4f8; }
 .oauth-icon { font-size: 0.9rem; opacity: 0.85; }
 
 .field-hint {

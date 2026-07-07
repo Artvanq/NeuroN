@@ -102,8 +102,6 @@ export default function RegisterPage() {
         />
         {error && <p className="error">{error}</p>}
 
-        <OAuthButtons />
-
         <form className="form panel" onSubmit={handleSubmit}>
           {inviteRequired && (
             <label>
@@ -164,6 +162,9 @@ export default function RegisterPage() {
             {submitting ? 'Creating…' : 'Create account'}
           </button>
         </form>
+
+        <OAuthButtons />
+
         <p className="muted" style={{ textAlign: 'center' }}>
           Already here? <Link href="/login">Sign in</Link>
         </p>
