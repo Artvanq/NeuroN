@@ -92,10 +92,8 @@ export default function ChatPage() {
       const page = await getMessages(id, { before: messages[0]._id });
       const older = Array.isArray(page) ? page : page.messages;
       if (older.length) {
-        setDisplayBodies((prev) => ({
-          ...prev,
-          ...(await buildDisplayMap(older, id, groupKeyRef.current)),
-        }));
+        const olderDisplayMap = await buildDisplayMap(older, id, groupKeyRef.current);
+        setDisplayBodies((prev) => ({ ...prev, ...olderDisplayMap }));
         setMessages((prev) => [...older, ...prev]);
       }
       setHasMore(Array.isArray(page) ? false : Boolean(page.hasMore));
