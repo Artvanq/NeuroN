@@ -824,8 +824,24 @@ export async function addGroupMembers(conversationId, usernames) {
   return data;
 }
 
-export async function getMessages(conversationId) {
-  const { data } = await api.get(`/conversations/${conversationId}/messages`);
+export async function removeGroupMember(conversationId, userId) {
+  const { data } = await api.delete(`/conversations/${conversationId}/members/${userId}`);
+  return data;
+}
+
+export async function leaveConversation(conversationId) {
+  const { data } = await api.post(`/conversations/${conversationId}/leave`);
+  return data;
+}
+
+export async function getMessages(conversationId, { before, limit } = {}) {
+  const params = {};
+  if (before) params.before = before;
+  if (limit) params.limit = limit;
+  const { data } = await api.get(`/conversations/${conversationId}/messages`, { params });
+  // Backend returns { messages, hasMore } for cursor pagination instead of a
+  // flat array (previously hard-capped at 500 with no way to load older
+  // history).
   return data;
 }
 

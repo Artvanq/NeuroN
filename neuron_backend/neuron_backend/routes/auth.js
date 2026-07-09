@@ -105,7 +105,7 @@ router.get(
   asyncHandler(async (_req, res) => {
     res.json({
       inviteRequired: inviteRequired(),
-      oauth: ['github', 'reddit', 'linkedin'],
+      oauth: ['github', 'linkedin', 'google'],
       captchaEnabled: Boolean(process.env.CAPTCHA_SECRET),
       reportCaptchaEnabled: Boolean(process.env.REPORT_CAPTCHA_SECRET || process.env.CAPTCHA_SECRET),
     });
@@ -191,7 +191,7 @@ router.post(
     }
 
     const row = await prisma.user.findUnique({
-      where: { username: username.trim().toLowerCase() },
+      where: { username: normalizeUsername(username) },
       include: userInclude,
     });
 

@@ -316,7 +316,7 @@ router.delete(
   requireAuth,
   asyncHandler(async (req, res) => {
     const provider = String(req.params.provider || '').toUpperCase();
-    if (!['GITHUB', 'REDDIT', 'LINKEDIN', 'GOOGLE'].includes(provider)) {
+    if (!['GITHUB', 'LINKEDIN', 'GOOGLE'].includes(provider)) {
       return res.status(400).json({ message: 'Unknown provider' });
     }
 

@@ -128,6 +128,9 @@ export default function MessagesPage() {
                     <strong>
                       {c.encrypted && <span className="lock-icon">🔒 </span>}
                       {title}
+                      {c.unreadCount > 0 && (
+                        <span className="unread-badge">{c.unreadCount > 99 ? '99+' : c.unreadCount}</span>
+                      )}
                     </strong>
                     {preview && <span className="conv-preview">{preview.slice(0, 80)}</span>}
                     <span className="meta">

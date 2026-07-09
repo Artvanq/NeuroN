@@ -18,8 +18,20 @@ router.post(
       return res.status(400).json({ message: 'value must be 1, -1, or 0' });
     }
 
-    const result = await castVote(req.user._id, targetType, targetId, parsed);
-    res.json(result);
+    try {
+      const result = await castVote(req.user._id, targetType, targetId, parsed);
+      res.json(result);
+    } catch (err) {
+      // Two near-simultaneous votes from the same user can both pass the
+      // "no existing vote" check before either commits; the unique
+      // constraint on (userId, targetType, targetId) then rejects the
+      // second create. Retry once instead of surfacing a 500.
+      if (err?.code === 'P2002') {
+        const result = await castVote(req.user._id, targetType, targetId, parsed);
+        return res.json(result);
+      }
+      throw err;
+    }
   })
 );
 

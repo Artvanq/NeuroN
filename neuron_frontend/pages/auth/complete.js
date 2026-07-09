@@ -65,8 +65,6 @@ export default function AuthCompletePage() {
   const providerLabel =
     provider === 'github'
       ? 'GitHub'
-      : provider === 'reddit'
-      ? 'Reddit'
       : provider === 'google'
       ? 'Google'
       : 'LinkedIn';

@@ -11,15 +11,6 @@ const PROVIDERS = {
     tokenUrl: 'https://github.com/login/oauth/access_token',
     profileUrl: 'https://api.github.com/user',
   },
-  reddit: {
-    key: 'REDDIT',
-    name: 'Reddit',
-    scopes: 'identity',
-    authorizeUrl: 'https://www.reddit.com/api/v1/authorize',
-    tokenUrl: 'https://www.reddit.com/api/v1/access_token',
-    profileUrl: 'https://oauth.reddit.com/api/v1/me',
-    duration: 'permanent',
-  },
   linkedin: {
     key: 'LINKEDIN',
     name: 'LinkedIn',
@@ -115,12 +106,6 @@ async function exchangeCode(providerSlug, code) {
     'Content-Type': 'application/x-www-form-urlencoded',
   };
 
-  if (providerSlug === 'reddit') {
-    const basic = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
-    headers.Authorization = `Basic ${basic}`;
-    body.delete('client_secret');
-  }
-
   const res = await fetch(provider.tokenUrl, {
     method: 'POST',
     headers,
@@ -169,25 +154,6 @@ async function fetchGitHubProfile(accessToken) {
   };
 }
 
-async function fetchRedditProfile(accessToken) {
-  const res = await fetch('https://oauth.reddit.com/api/v1/me', {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'User-Agent': 'Neuron/1.0',
-    },
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error('Reddit profile failed');
-  return {
-    providerUserId: String(data.id),
-    usernameHint: (data.name || '').toLowerCase().replace(/[^a-z0-9_]/g, ''),
-    displayName: data.name,
-    avatarUrl: data.icon_img?.split('?')[0] || null,
-    profileUrl: `https://www.reddit.com/user/${data.name}`,
-    email: null,
-  };
-}
-
 async function fetchLinkedInProfile(accessToken) {
   const res = await fetch('https://api.linkedin.com/v2/userinfo', {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -231,7 +197,6 @@ async function fetchGoogleProfile(accessToken) {
 
 async function fetchProviderProfile(providerSlug, accessToken) {
   if (providerSlug === 'github') return fetchGitHubProfile(accessToken);
-  if (providerSlug === 'reddit') return fetchRedditProfile(accessToken);
   if (providerSlug === 'linkedin') return fetchLinkedInProfile(accessToken);
   if (providerSlug === 'google') return fetchGoogleProfile(accessToken);
   throw new Error('Unknown provider');

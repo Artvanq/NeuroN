@@ -44,6 +44,8 @@ export default function ChatPage() {
   const [error, setError] = useState(null);
   const [live, setLive] = useState(false);
   const [typingUsers, setTypingUsers] = useState([]);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const bottomRef = useRef(null);
   const groupKeyRef = useRef(null);
   const socketRef = useRef(null);
@@ -58,12 +60,14 @@ export default function ChatPage() {
   const load = useCallback(async () => {
     if (!id) return;
     try {
-      const [conv, msgs] = await Promise.all([
+      const [conv, page] = await Promise.all([
         getConversation(id),
         getMessages(id),
       ]);
+      const msgs = Array.isArray(page) ? page : page.messages;
       setConversation(conv);
       setMessages(msgs);
+      setHasMore(Array.isArray(page) ? false : Boolean(page.hasMore));
 
       let key = null;
       if (conv.encrypted !== false) {
@@ -81,6 +85,27 @@ export default function ChatPage() {
     }
   }, [id]);
 
+  const loadOlder = useCallback(async () => {
+    if (!id || !messages.length || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const page = await getMessages(id, { before: messages[0]._id });
+      const older = Array.isArray(page) ? page : page.messages;
+      if (older.length) {
+        setDisplayBodies((prev) => ({
+          ...prev,
+          ...(await buildDisplayMap(older, id, groupKeyRef.current)),
+        }));
+        setMessages((prev) => [...older, ...prev]);
+      }
+      setHasMore(Array.isArray(page) ? false : Boolean(page.hasMore));
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to load older messages'));
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [id, messages, loadingMore]);
+
   useEffect(() => {
     if (!isLoggedIn()) {
       router.replace(`/login?next=/messages/${id || ''}`);
@@ -95,7 +120,14 @@ export default function ChatPage() {
     socket.emit('join_conversation', id);
     setLive(socket.connected);
 
-    const onConnect = () => setLive(true);
+    const onConnect = () => {
+      // Socket.io rooms are per-connection: after any drop/reconnect the
+      // server no longer has this socket in the conversation room even
+      // though the UI kept showing "live". Without re-emitting here, new
+      // messages silently stop arriving until a manual page reload.
+      socket.emit('join_conversation', id);
+      setLive(true);
+    };
     const onDisconnect = () => setLive(false);
     const onMsg = async (msg) => {
       const plain = await messageDisplayText(
@@ -108,6 +140,12 @@ export default function ChatPage() {
         if (prev.some((m) => m._id === msg._id)) return prev;
         return [...prev, msg];
       });
+      // Keep unread state current while the conversation is actively open —
+      // previously only the initial load() marked it read, so unread count
+      // went stale for anyone watching the conversation live.
+      if (msg.sender?.username !== me?.username) {
+        markConversationRead(id, { messageId: msg._id }).catch(() => {});
+      }
     };
     const onMsgUpdated = async (msg) => {
       const plain = msg.deleted
@@ -371,6 +409,16 @@ export default function ChatPage() {
           <p className="muted">Loading…</p>
         ) : (
           <div className="chat-messages">
+            {hasMore && (
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                disabled={loadingMore}
+                onClick={loadOlder}
+              >
+                {loadingMore ? 'Loading…' : 'Load older messages'}
+              </button>
+            )}
             {messages.map((m) => {
               const mine = m.sender?.username === me?.username;
               const text = m.deleted

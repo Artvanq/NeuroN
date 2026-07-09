@@ -30,6 +30,13 @@ const { startGitSshServer } = require('./utils/gitSshServer');
 
 const app = express();
 
+// Behind a reverse proxy (see deploy/Caddyfile), trust the first hop so
+// req.ip / X-Forwarded-For reflect the real client instead of the proxy —
+// otherwise rate limiting and IP-based session metadata collapse onto one bucket.
+app.set('trust proxy', 1);
+
+const isExplicitlyNonProd = ['development', 'test'].includes(process.env.NODE_ENV);
+
 const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:3000')
   .split(',')
   .map((o) => o.trim())
@@ -41,7 +48,10 @@ app.use(
       if (!origin || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      if (process.env.NODE_ENV !== 'production') {
+      // Fail closed: only relax CORS when NODE_ENV is explicitly development/test,
+      // not merely "anything other than production" (a misconfigured/unset
+      // NODE_ENV must not silently open CORS with credentials in prod).
+      if (isExplicitlyNonProd) {
         return callback(null, true);
       }
       return callback(new Error('Not allowed by CORS'));
@@ -49,6 +59,21 @@ app.use(
     credentials: true,
   })
 );
+
+// Baseline security headers (helmet is unavailable in this environment; set
+// the essentials by hand instead of shipping with none).
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+  if (!isExplicitlyNonProd) {
+    res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
+  }
+  next();
+});
+
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 

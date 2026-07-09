@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const userService = require('./services/users');
 const { JWT_SECRET } = require('./utils/jwtSecret');
 const { getRedisPubSub, isRedisAvailable } = require('./utils/redis');
-const prisma = require('./utils/prisma');
+const { isParticipant } = require('./utils/conversationHelpers');
 
 async function initSocket(httpServer, allowedOrigins) {
   const { Server } = require('socket.io');
@@ -59,9 +59,18 @@ async function initSocket(httpServer, allowedOrigins) {
   io.on('connection', (socket) => {
     socket.join(`user:${socket.user._id}`);
 
-    socket.on('join_conversation', (conversationId) => {
-      if (conversationId) {
-        socket.join(`conversation:${conversationId}`);
+    socket.on('join_conversation', async (conversationId) => {
+      try {
+        const cid = String(conversationId || '').trim();
+        if (!cid) return;
+        // Without this check, any authenticated socket could join any
+        // conversation room by guessing/enumerating ids and silently receive
+        // chat_message/chat_typing events for a DM or group it isn't part of.
+        const ok = await isParticipant(cid, socket.user._id);
+        if (!ok) return;
+        socket.join(`conversation:${cid}`);
+      } catch (err) {
+        console.warn('join_conversation failed:', err.message);
       }
     });
 
@@ -76,11 +85,12 @@ async function initSocket(httpServer, allowedOrigins) {
         const conversationId = String(payload.conversationId || '').trim();
         if (!conversationId) return;
         const isTyping = Boolean(payload.isTyping);
-        const participant = await prisma.conversationParticipant.findFirst({
-          where: { conversationId, userId: socket.user._id },
-          select: { id: true },
-        });
-        if (!participant) return;
+        // Previously queried a non-existent `conversationParticipant` model
+        // (the real model is ConversationMember) — every call threw and was
+        // silently swallowed by the catch below, so typing indicators never
+        // worked and this membership check never actually ran.
+        const ok = await isParticipant(conversationId, socket.user._id);
+        if (!ok) return;
         io.to(`conversation:${conversationId}`).emit('chat_typing', {
           conversationId,
           isTyping,
@@ -103,4 +113,14 @@ function emitChatMessage(io, conversationId, message) {
   io.to(`conversation:${conversationId}`).emit('chat_message', message);
 }
 
-module.exports = { initSocket, emitChatMessage };
+// Force a user's currently-connected sockets out of a conversation room —
+// call this when removing/leaving a group so a removed member's already-open
+// tab stops receiving new messages instead of relying on them to reconnect.
+async function evictUserFromConversation(io, conversationId, userId) {
+  const sockets = await io.in(`user:${userId}`).fetchSockets();
+  for (const s of sockets) {
+    s.leave(`conversation:${conversationId}`);
+  }
+}
+
+module.exports = { initSocket, emitChatMessage, evictUserFromConversation };

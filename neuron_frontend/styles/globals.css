@@ -1695,6 +1695,17 @@ button { font-family: inherit; }
   padding-right: 1rem;
   border-radius: var(--radius);
 }
+.unread-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: var(--accent, #ff4500);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  vertical-align: middle;
+}
 .conversation-item strong {
   display: block;
   color: #fff;

@@ -12,6 +12,7 @@ const categoryService = require('../services/categories');
 const threadService = require('../services/threads');
 const replyService = require('../services/replies');
 const inquiryService = require('../services/inquiries');
+const synthesisService = require('../services/synthesis');
 const { resolveUserRole } = require('../utils/rbac');
 
 const router = express.Router();
@@ -366,6 +367,18 @@ router.patch(
       if (!ok) return res.status(403).json({ message: 'Not allowed to pin this thread' });
       data.isPinned = Boolean(req.body.isPinned);
     }
+    if (req.body.title !== undefined || req.body.body !== undefined) {
+      if (!sameId(row.authorId, req.user._id)) {
+        return res.status(403).json({ message: 'Not allowed' });
+      }
+      const nextTitle = req.body.title !== undefined ? String(req.body.title).trim() : row.title;
+      const nextBody = req.body.body !== undefined ? String(req.body.body).trim() : row.body;
+      if (!nextTitle) {
+        return res.status(400).json({ message: 'Title is required' });
+      }
+      data.title = nextTitle;
+      data.body = nextBody;
+    }
     if (Object.keys(data).length) {
       await prisma.thread.update({ where: { id: row.id }, data });
     }
@@ -497,54 +510,25 @@ router.delete(
     if (!reply) {
       return res.status(404).json({ message: 'Reply not found' });
     }
-    if (!sameId(reply.author?._id, req.user._id)) {
+    if (!sameId(reply.author?._id, req.user._id) && !(await canModerateThread(req.user._id, thread))) {
       return res.status(403).json({ message: 'Not allowed' });
     }
 
-    const childRows = await prisma.reply.findMany({
-      where: { parentReplyId: String(reply._id) },
-      select: { id: true },
-    });
-    const childCount = childRows.length;
-    const replyVoteIds = [String(reply._id), ...childRows.map((r) => r.id)];
+    const subtreeIds = await replyService.collectReplySubtreeIds(reply._id);
 
     await prisma.vote.deleteMany({
-      where: { targetType: 'reply', targetId: { in: replyVoteIds } },
+      where: { targetType: 'reply', targetId: { in: subtreeIds } },
     });
-    await replyService.deleteReplySubtree({
-      replyId: reply._id,
-      childReplyIds: childRows.map((r) => r.id),
-    });
-    await threadService.setThreadReplyCount(thread._id, Math.max(0, thread.replyCount - 1 - childCount));
+    await replyService.deleteReplySubtree(subtreeIds);
+
+    // Recompute from the actual row count rather than writing a snapshot-based
+    // absolute value, so concurrent deletions on the same thread can't clobber
+    // each other's decrement (lost update), and the count can't drift when a
+    // multi-level subtree is removed in one go.
+    const remaining = await prisma.reply.count({ where: { threadId: String(thread._id) } });
+    await threadService.setThreadReplyCount(thread._id, remaining);
 
     res.json({ message: 'Deleted' });
-  })
-);
-
-router.patch(
-  '/:id',
-  requireAuth,
-  asyncHandler(async (req, res) => {
-    const thread = await threadService.getThreadById(req.params.id);
-    if (!thread) {
-      return res.status(404).json({ message: 'Thread not found' });
-    }
-    if (!sameId(thread.author?._id, req.user._id)) {
-      return res.status(403).json({ message: 'Not allowed' });
-    }
-
-    const { title, body } = req.body;
-    const nextTitle = title !== undefined ? String(title).trim() : thread.title;
-    const nextBody = body !== undefined ? String(body).trim() : thread.body;
-    if (!nextTitle) {
-      return res.status(400).json({ message: 'Title is required' });
-    }
-
-    const updated = await threadService.updateThread(thread._id, {
-      title: nextTitle,
-      body: nextBody,
-    });
-    res.json(updated);
   })
 );
 
@@ -556,7 +540,7 @@ router.delete(
     if (!thread) {
       return res.status(404).json({ message: 'Thread not found' });
     }
-    if (!sameId(thread.author?._id, req.user._id)) {
+    if (!sameId(thread.author?._id, req.user._id) && !(await canModerateThread(req.user._id, thread))) {
       return res.status(403).json({ message: 'Not allowed' });
     }
 

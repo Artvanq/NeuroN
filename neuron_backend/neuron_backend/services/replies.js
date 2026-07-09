@@ -56,13 +56,34 @@ async function userRepliedOnThread({ threadId, authorId }) {
   return count > 0;
 }
 
-async function deleteReplySubtree({ replyId, childReplyIds = [] }) {
-  const ids = [String(replyId), ...childReplyIds.map(String)].filter(Boolean);
-  await prisma.reply.deleteMany({
-    where: {
-      OR: [{ id: { in: ids } }, { parentReplyId: { in: ids } }],
-    },
-  });
+// Collects replyId plus every descendant reply id at any depth (not just
+// direct children) via BFS, so deep threads (MAX_REPLY_DEPTH up to 8) don't
+// leave orphaned grandchildren behind with parentReplyId nulled out by
+// onDelete: SetNull.
+async function collectReplySubtreeIds(replyId) {
+  const allIds = [String(replyId)];
+  let frontier = [String(replyId)];
+
+  while (frontier.length) {
+    const children = await prisma.reply.findMany({
+      where: { parentReplyId: { in: frontier } },
+      select: { id: true },
+    });
+    if (!children.length) break;
+    frontier = children.map((c) => String(c.id));
+    allIds.push(...frontier);
+  }
+
+  return allIds;
+}
+
+// Deletes the given set of reply ids (expected to be a full subtree from
+// collectReplySubtreeIds) and returns how many rows were actually removed,
+// so callers can keep denormalized counters (e.g. thread.replyCount) exact
+// rather than guessing based on direct-child count.
+async function deleteReplySubtree(ids) {
+  const result = await prisma.reply.deleteMany({ where: { id: { in: ids.map(String) } } });
+  return result.count;
 }
 
 async function deleteAllRepliesForThread(threadId) {
@@ -75,6 +96,7 @@ module.exports = {
   createReply,
   updateReplyBody,
   userRepliedOnThread,
+  collectReplySubtreeIds,
   deleteReplySubtree,
   deleteAllRepliesForThread,
 };

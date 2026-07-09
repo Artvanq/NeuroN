@@ -4,7 +4,6 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 const PROVIDERS = [
   { slug: 'github', label: 'GitHub', icon: '◆' },
-  { slug: 'reddit', label: 'Reddit', icon: '●' },
   { slug: 'linkedin', label: 'LinkedIn', icon: 'in' },
   { slug: 'google', label: 'Google', icon: 'G' },
 ];

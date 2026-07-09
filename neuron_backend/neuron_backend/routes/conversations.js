@@ -2,7 +2,7 @@ const express = require('express');
 const prisma = require('../utils/prisma');
 const { requireAuth } = require('../middleware/auth');
 const asyncHandler = require('../middleware/asyncHandler');
-const { emitChatMessage } = require('../socket');
+const { emitChatMessage, evictUserFromConversation } = require('../socket');
 const { createNotification } = require('../utils/notify');
 const { formatMessage, formatMessageReaction } = require('../utils/serialize');
 const { normalizeAttachments } = require('../utils/attachments');
@@ -15,7 +15,7 @@ const {
   getMemberRole,
   unwrapGroupKey,
 } = require('../utils/conversationHelpers');
-const { canMessageUser } = require('../utils/privacy');
+const { canMessageUser, getBlockStatus } = require('../utils/privacy');
 
 const router = express.Router();
 
@@ -24,6 +24,7 @@ router.use(requireAuth);
 async function enrichList(conversations, viewerId) {
   const convIds = conversations.map((c) => c.id);
   const lastByConv = {};
+  const unreadByConv = {};
 
   if (convIds.length > 0) {
     const latest = await prisma.message.findMany({
@@ -35,11 +36,36 @@ async function enrichList(conversations, viewerId) {
     for (const m of latest) {
       lastByConv[m.conversationId] = formatMessage(m);
     }
+
+    // ConversationReadState was being written on every /read call but never
+    // read back, so inbox unread badges never rendered. Compute per-conversation
+    // unread counts from lastReadAt (falls back to "all messages" if the user
+    // has never marked this conversation read).
+    const readStates = await prisma.conversationReadState.findMany({
+      where: { conversationId: { in: convIds }, userId: viewerId },
+    });
+    const readByConv = Object.fromEntries(readStates.map((r) => [r.conversationId, r.lastReadAt]));
+
+    const unreadCounts = await Promise.all(
+      convIds.map(async (id) => {
+        const since = readByConv[id];
+        const count = await prisma.message.count({
+          where: {
+            conversationId: id,
+            senderId: { not: viewerId },
+            ...(since ? { createdAt: { gt: since } } : {}),
+          },
+        });
+        return [id, count];
+      })
+    );
+    for (const [id, count] of unreadCounts) unreadByConv[id] = count;
   }
 
   return conversations.map((c) => ({
     ...formatConversationFull(c, viewerId),
     lastMessage: lastByConv[c.id] || null,
+    unreadCount: unreadByConv[c.id] || 0,
   }));
 }
 
@@ -239,6 +265,88 @@ router.post(
   })
 );
 
+// Group membership previously had no way to shrink — members could be added
+// but never removed, and nobody could leave. Adding both, with a guard
+// against orphaning a group with zero owners.
+async function removeMember({ req, res, conversationId, targetId, requireAdminUnlessSelf }) {
+  const conversation = await prisma.conversation.findUnique({
+    where: { id: conversationId },
+    include: convInclude,
+  });
+  if (!conversation || conversation.type !== 'GROUP') {
+    return res.status(404).json({ message: 'Group not found' });
+  }
+
+  const isSelf = targetId === req.user._id;
+  if (requireAdminUnlessSelf && !isSelf) {
+    const role = await getMemberRole(conversation.id, req.user._id);
+    if (!['owner', 'admin'].includes(role)) {
+      return res.status(403).json({ message: 'Only admins can remove members' });
+    }
+  }
+
+  const targetRole = await getMemberRole(conversation.id, targetId);
+  if (!targetRole) {
+    return res.status(404).json({ message: 'User is not a member' });
+  }
+
+  if (targetRole === 'owner') {
+    const ownerCount = await prisma.conversationMember.count({
+      where: { conversationId: conversation.id, role: 'owner' },
+    });
+    if (ownerCount <= 1) {
+      return res.status(400).json({
+        message: 'Transfer ownership to another member before leaving/removing the last owner',
+      });
+    }
+  }
+
+  await prisma.conversation.update({
+    where: { id: conversation.id },
+    data: {
+      participants: { disconnect: { id: targetId } },
+      members: { deleteMany: { userId: targetId } },
+    },
+  });
+
+  const io = req.app.get('io');
+  if (io) {
+    await evictUserFromConversation(io, conversation.id, targetId);
+    io.to(`conversation:${conversation.id}`).emit('member_removed', {
+      conversationId: conversation.id,
+      userId: targetId,
+    });
+  }
+
+  return res.json({ message: 'Removed' });
+}
+
+router.delete(
+  '/:id/members/:userId',
+  asyncHandler((req, res) =>
+    removeMember({
+      req,
+      res,
+      conversationId: req.params.id,
+      targetId: req.params.userId,
+      requireAdminUnlessSelf: true,
+    })
+  )
+);
+
+router.post(
+  '/:id/leave',
+  asyncHandler((req, res) =>
+    removeMember({
+      req,
+      res,
+      conversationId: req.params.id,
+      targetId: req.user._id,
+      requireAdminUnlessSelf: false,
+    })
+  )
+);
+
 router.get(
   '/:id/messages',
   asyncHandler(async (req, res) => {
@@ -246,14 +354,36 @@ router.get(
       return res.status(403).json({ message: 'Access denied' });
     }
 
+    // Cursor-based pagination: ?before=<messageId> loads the page preceding
+    // that message. Previously this was a flat `take: 500` with no way to
+    // reach older history — any conversation past 500 messages silently lost
+    // access to everything before that window.
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 200);
+    const before = req.query.before ? String(req.query.before) : null;
+
+    let cursorDate = null;
+    if (before) {
+      const cursorMsg = await prisma.message.findUnique({
+        where: { id: before },
+        select: { createdAt: true },
+      });
+      cursorDate = cursorMsg?.createdAt || null;
+    }
+
     const messages = await prisma.message.findMany({
-      where: { conversationId: req.params.id },
+      where: {
+        conversationId: req.params.id,
+        ...(cursorDate ? { createdAt: { lt: cursorDate } } : {}),
+      },
       include: { sender: true, reactions: { include: { user: true } } },
-      orderBy: { createdAt: 'asc' },
-      take: 500,
+      orderBy: { createdAt: 'desc' },
+      take: limit,
     });
 
-    res.json(messages.map(formatMessage));
+    res.json({
+      messages: messages.reverse().map(formatMessage),
+      hasMore: messages.length === limit,
+    });
   })
 );
 
@@ -269,6 +399,19 @@ router.post(
     }
     if (!(await isParticipant(conversation.id, req.user._id))) {
       return res.status(403).json({ message: 'Access denied' });
+    }
+
+    // Blocking was only enforced when a DM is first created — if either side
+    // blocks the other afterwards, the existing conversation kept accepting
+    // new messages in both directions. Re-check on every send for DMs.
+    if (conversation.type === 'DM') {
+      const other = conversation.participants.find((p) => p.id !== req.user._id);
+      if (other) {
+        const { blocked, blockedBy } = await getBlockStatus(req.user._id, other.id);
+        if (blocked || blockedBy) {
+          return res.status(403).json({ message: 'Messaging is not available in this conversation' });
+        }
+      }
     }
 
     const { body, attachments } = req.body;
@@ -311,17 +454,22 @@ router.post(
       ? 'Encrypted message'
       : body.trim().slice(0, 120);
 
-    for (const p of conversation.participants) {
-      if (p.id === req.user._id) continue;
-      await createNotification({
-        userId: p.id,
-        type: 'message',
-        title,
-        body: notifyBody,
-        link: `/messages/${conversation.id}`,
-        actorId: req.user._id,
-      });
-    }
+    // Was a sequential await-per-member loop (N+1) — send latency scaled
+    // linearly with group size. Fan out concurrently instead.
+    await Promise.all(
+      conversation.participants
+        .filter((p) => p.id !== req.user._id)
+        .map((p) =>
+          createNotification({
+            userId: p.id,
+            type: 'message',
+            title,
+            body: notifyBody,
+            link: `/messages/${conversation.id}`,
+            actorId: req.user._id,
+          })
+        )
+    );
 
     res.status(201).json(payload);
   })

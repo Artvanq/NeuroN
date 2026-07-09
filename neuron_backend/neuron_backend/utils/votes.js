@@ -26,66 +26,26 @@ async function castVote(userId, targetType, targetId, requestedValue) {
     throw Object.assign(new Error('Invalid target type'), { status: 400 });
   }
 
+  let authorId;
   if (type === 'thread') {
-    const thread = await prisma.thread.findUnique({ where: { id: tid } });
+    const thread = await prisma.thread.findUnique({ where: { id: tid }, select: { authorId: true } });
     if (!thread) throw Object.assign(new Error('Thread not found'), { status: 404 });
+    authorId = thread.authorId;
   } else {
-    const reply = await prisma.reply.findUnique({ where: { id: tid } });
+    const reply = await prisma.reply.findUnique({ where: { id: tid }, select: { authorId: true } });
     if (!reply) throw Object.assign(new Error('Reply not found'), { status: 404 });
+    authorId = reply.authorId;
   }
 
-  const existing = await prisma.vote.findUnique({
-    where: {
-      userId_targetType_targetId: {
-        userId: String(userId),
-        targetType: type,
-        targetId: tid,
-      },
-    },
-  });
-
-  let myVote = null;
-  let scoreDelta = 0;
-
-  if (requestedValue === 0 || requestedValue === null || requestedValue === undefined) {
-    if (existing) {
-      scoreDelta = -existing.value;
-      await prisma.vote.delete({ where: { id: existing.id } });
-    }
-  } else {
-    const v = requestedValue > 0 ? 1 : -1;
-    if (!existing) {
-      myVote = v;
-      scoreDelta = v;
-      await prisma.vote.create({
-        data: { userId: String(userId), targetType: type, targetId: tid, value: v },
-      });
-    } else if (existing.value === v) {
-      scoreDelta = -v;
-      await prisma.vote.delete({ where: { id: existing.id } });
-    } else {
-      myVote = v;
-      scoreDelta = v - existing.value;
-      await prisma.vote.update({ where: { id: existing.id }, data: { value: v } });
-    }
+  if (authorId && String(authorId) === String(userId) && requestedValue) {
+    throw Object.assign(new Error('You cannot vote on your own post'), { status: 400 });
   }
 
-  if (scoreDelta !== 0) {
-    if (type === 'thread') {
-      await prisma.thread.update({
-        where: { id: tid },
-        data: { score: { increment: scoreDelta } },
-      });
-    } else {
-      await prisma.reply.update({
-        where: { id: tid },
-        data: { score: { increment: scoreDelta } },
-      });
-    }
-  }
-
-  if (myVote === null && existing) {
-    const still = await prisma.vote.findUnique({
+  // Wrap the read-check-write in a transaction so concurrent votes from the
+  // same user (double-click, retry) can't both read "no existing vote" and
+  // race each other into a duplicate-key error / lost score increment.
+  const { myVote, scoreDelta } = await prisma.$transaction(async (tx) => {
+    const existing = await tx.vote.findUnique({
       where: {
         userId_targetType_targetId: {
           userId: String(userId),
@@ -94,12 +54,47 @@ async function castVote(userId, targetType, targetId, requestedValue) {
         },
       },
     });
-    myVote = still?.value ?? null;
-  }
+
+    let nextVote = null;
+    let delta = 0;
+
+    if (requestedValue === 0 || requestedValue === null || requestedValue === undefined) {
+      if (existing) {
+        delta = -existing.value;
+        await tx.vote.delete({ where: { id: existing.id } });
+      }
+    } else {
+      const v = requestedValue > 0 ? 1 : -1;
+      if (!existing) {
+        nextVote = v;
+        delta = v;
+        await tx.vote.create({
+          data: { userId: String(userId), targetType: type, targetId: tid, value: v },
+        });
+      } else if (existing.value === v) {
+        delta = -v;
+        await tx.vote.delete({ where: { id: existing.id } });
+      } else {
+        nextVote = v;
+        delta = v - existing.value;
+        await tx.vote.update({ where: { id: existing.id }, data: { value: v } });
+      }
+    }
+
+    if (delta !== 0) {
+      if (type === 'thread') {
+        await tx.thread.update({ where: { id: tid }, data: { score: { increment: delta } } });
+      } else {
+        await tx.reply.update({ where: { id: tid }, data: { score: { increment: delta } } });
+      }
+    }
+
+    return { myVote: nextVote, scoreDelta: delta };
+  });
 
   const score = await getScore(type, tid);
 
-  if (scoreDelta > 0 && (myVote === 1 || (existing && requestedValue > 0))) {
+  if (scoreDelta > 0 && myVote === 1) {
     notifyVoteAuthor({ voterId: userId, targetType: type, targetId: tid, scoreDelta }).catch(
       () => {}
     );
